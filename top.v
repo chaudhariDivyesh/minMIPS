@@ -66,10 +66,10 @@ module MUXDataToRegester(memToReg,regDst,readDATA,PC_plus_four,ALU_result,writed
         end
         else begin
             if(memToReg) begin
-                writedata<=ALU_result;
+                writedata<=readDATA;
             end 
             else begin
-                writedata<=readDATA;
+                writedata<=ALU_result;
             end       
 
         end    
@@ -334,15 +334,17 @@ always @(*) begin
     end
 endmodule
 module registerFile (rst,readAddress1, readAddress2, writeAddress, writeData,
-WE, dataOut1, dataOut2, clock);
+WE, dataOut1, dataOut2, clock,testdata);
     input rst;
     input [4:0] readAddress1, readAddress2, writeAddress;
     input [31:0] writeData;
     input WE, clock;
     output [31:0] dataOut1, dataOut2;
+    output [31:0] testdata;
     reg [31:0] RF [31:0];
     assign dataOut1= RF[readAddress1];
     assign dataOut2= RF[readAddress2];
+    assign testdata=RF[writeAddress];
     integer i;
     always @(negedge clock or posedge rst) begin
         if (rst) begin
@@ -762,10 +764,10 @@ module instructionMemory(
         else if (enable) begin
             // Dummy instruction set for testing
             imemory[0] = 32'h20080001; // addi $t0, $zero, 1
-            imemory[1] = 32'h20090002; // addi $t1, $zero, 2
-            imemory[2] = 32'h01095020; // add  $t2, $t0, $t1
-            imemory[3] = 32'hAC0A0000; // sw   $t2, 0($zero)
-            imemory[4] = 32'h8C0B0000; // lw   $t3, 0($zero)
+            imemory[1] = 32'd0; // addi $t1, $zero, 2
+            imemory[2] = 32'h20090002; // addi $t1, $zero, 2
+            imemory[3] = 32'h200A0003; // addi   $t2,$zero, 0($zero)
+            imemory[4] = 32'b0000_0001_0100_1001_0101_1000_0010_0000; // add $t3,$t2,$t1
             imemory[5] = 32'h012A5822; // sub  $t3, $t1, $t2
 
             imemory[6] = 32'h20080001; // addi $t0, $zero, 1
@@ -853,7 +855,7 @@ module main(
     wire [1:0] reg_dst;
     // which branch
     wire [3:0] branches;
-    
+    wire [31:0] testdata;
      // fetch instruction 
     instructionMemory inst_instruction(
         .rst(rst),
@@ -917,7 +919,8 @@ module main(
         .WE(reg_write),
         .clock(clk),
         .dataOut1(read_data1),
-        .dataOut2(read_data2)
+        .dataOut2(read_data2),
+        .testdata(testdata)
     );    
     /// selection of data for r type and i type inst
     ALU_Input_Mux alu_input_mux (
@@ -973,7 +976,7 @@ module main(
     ) ;
     initial begin
         // Print selected signals when they change
-        $monitor("Time = %0t|rst=%b |enable=%b | PC = %d | PC+4 = %d | Instr = %d", $time,rst,enable,PC, PC_plus_four, instruction);
+       $monitor("Time = %0t|clk=%b | PC = %d| Instr = %d|rs=%d|rt=%d|rd=%d|ALU=%d|testdata=%d|we=%d", $time,clk,PC, instruction,rs,rt,rd,ALU_result,testdata,write_data);
 //             opcode, funct, rs, rt, rd, shamt,
 //            immediate, sign_extended_immediate, jump_address, read_data1, read_data2, write_data,
 //            ALU_input1, ALU_input2, ALU_result, ALU_op, ALU_control,
@@ -981,14 +984,14 @@ module main(
 //            HI, LO, branch_target, jump_target,
 //            jump, reg_write, mem_read, mem_write, mem_to_reg,
 //            alu_src, branch, reg_dst, branches
-//        $monitor("Time = %0t|rst=%b |enable=%b | PC = %d | PC+4 = %d | Instr = %d | opcode = %b | funct = %b | rs = %d | rt = %d | rd = %d | shamt = %d | imm = %d | sign_ext = %d | jump_addr = %d | R1 = %h | R2 = %d | WData = %d | ALU1 = %d | ALU2 = %d | ALUres = %d | ALUop = %d | ALUctrl = %b | eq = %b | lt = %b | gt = %b | carry = %b | overflow = %b | HI = %d | LO = %d | BTarget = %d | JTarget = %d | jump = %b | reg_write = %b | mem_read = %b | mem_write = %b | mem2reg = %b | alusrc = %b | branch = %b | regdst = %b | branches = %b",
-//            $time,rst,enable,PC, PC_plus_four, instruction, opcode, funct, rs, rt, rd, shamt,
-//            immediate, sign_extended_immediate, jump_address, read_data1, read_data2, write_data,
-//            ALU_input1, ALU_input2, ALU_result, ALU_op, ALU_control,
-//            equal, less_than, greater_than, carry_out, overflow,
-//            HI, LO, branch_target, jump_target,
-//            jump, reg_write, mem_read, mem_write, mem_to_reg,
-//            alu_src, branch, reg_dst, branches);
+    //    $monitor("Time = %0t|rst=%b |enable=%b | PC = %d | PC+4 = %d | Instr = %d | opcode = %b | funct = %b | rs = %d | rt = %d | rd = %d | shamt = %d | imm = %d | sign_ext = %d | jump_addr = %d | R1 = %h | R2 = %d | WData = %d | ALU1 = %d | ALU2 = %d | ALUres = %d | ALUop = %d | ALUctrl = %b | eq = %b | lt = %b | gt = %b | carry = %b | overflow = %b | HI = %d | LO = %d | BTarget = %d | JTarget = %d | jump = %b | reg_write = %b | mem_read = %b | mem_write = %b | mem2reg = %b | alusrc = %b | branch = %b | regdst = %b | branches = %b",
+    //        $time,rst,enable,PC, PC_plus_four, instruction, opcode, funct, rs, rt, rd, shamt,
+    //        immediate, sign_extended_immediate, jump_address, read_data1, read_data2, write_data,
+    //        ALU_input1, ALU_input2, ALU_result, ALU_op, ALU_control,
+    //        equal, less_than, greater_than, carry_out, overflow,
+    //        HI, LO, branch_target, jump_target,
+    //        jump, reg_write, mem_read, mem_write, mem_to_reg,
+    //        alu_src, branch, reg_dst, branches);
     end  
 endmodule
 module tb_instructionMemory;
