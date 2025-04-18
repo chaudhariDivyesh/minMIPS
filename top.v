@@ -39,7 +39,7 @@ output reg [31:0] nextPC;
                     nextPC<=readDATA1;
                 end  
                 else begin
-                    nextPC<={PC_plus_four[31:28],jump_target[25:0],2'b00};
+                    nextPC<={PC_plus_four[31:28],2'b00,jump_target[25:0]};
                 end  
             end
             else begin
@@ -334,17 +334,23 @@ always @(*) begin
     end
 endmodule
 module registerFile (rst,readAddress1, readAddress2, writeAddress, writeData,
-WE, dataOut1, dataOut2, clock,testdata);
+WE, dataOut1, dataOut2, clock,testdata1,testdata2,testdata3,testdata4);
     input rst;
     input [4:0] readAddress1, readAddress2, writeAddress;
     input [31:0] writeData;
     input WE, clock;
     output [31:0] dataOut1, dataOut2;
-    output [31:0] testdata;
+    output [31:0] testdata1;
+    output [31:0] testdata2;
+    output [31:0] testdata3;
+    output [31:0] testdata4;
     reg [31:0] RF [31:0];
     assign dataOut1= RF[readAddress1];
     assign dataOut2= RF[readAddress2];
-    assign testdata=RF[writeAddress];
+    assign testdata1=RF[9];
+    assign testdata2=RF[10];
+    assign testdata3=RF[11];
+    assign testdata4=RF[12];
     integer i;
     always @(negedge clock or posedge rst) begin
         if (rst) begin
@@ -694,28 +700,7 @@ module myControlUnit(opcode,regDst,regWrite,aluSrc,memRead,memWrite,memToReg,jum
     end
 endmodule
 
-module dataMemory(memRead,memWrite,rst,writedata,address,readDATA);
-    input memRead,memWrite,rst;
-    input [31:0]writedata;
-    input [31:0]address;
-    integer i;
-    output [31:0] readDATA; 
-    reg [31:0]memory [0:1023];/// read data 2
-    assign readDATA= memory[address];     
-    always@(*)begin
-        if(rst)begin
-            
-            for (i = 0; i < 1023; i = i + 1)
-                memory[i] <= 32'b0;
-        end
-        else begin
-            if(memWrite) memory[address]<= writedata;
-            else memory[address]<=memory[address];
-        end        
-    end    
-endmodule
-
-// copied from yug make your own 
+ 
 module SignExtender(
     input [15:0] immediate,
     output  [31:0] sign_extended_immediate
@@ -744,78 +729,34 @@ module Decoder(
     end
 endmodule
 
-module instructionMemory(
-    input rst,
-    input enable,
-    input [9:0] address,
-    output  [31:0] instruction
-);
-    reg [31:0] imemory [1023:0];
-    integer i;
-    initial begin
-        $monitor("Time = %0t | address = %d | instruction = %h", $time, address, instruction);
-    end    
-    always @(*) begin
-        if (rst) begin
-            
-            for (i = 0; i < 1024; i = i + 1)
-                imemory[i] = 32'b0;
-        end
-        else if (enable) begin
-            // Dummy instruction set for testing
-            imemory[0] = 32'h20080001; // addi $t0, $zero, 1
-            imemory[1] = 32'd0; // addi $t1, $zero, 2
-            imemory[2] = 32'h20090002; // addi $t1, $zero, 2
-            imemory[3] = 32'h200A0003; // addi   $t2,$zero, 0($zero)
-            imemory[4] = 32'b0000_0001_0100_1001_0101_1000_0010_0000; // add $t3,$t2,$t1
-            imemory[5] = 32'h012A5822; // sub  $t3, $t1, $t2
-
-            imemory[6] = 32'h20080001; // addi $t0, $zero, 1
-            imemory[7] = 32'h20090002; // addi $t1, $zero, 2
-            imemory[8] = 32'h01095020; // add  $t2, $t0, $t1
-            imemory[9] = 32'hAC0A0000; // sw   $t2, 0($zero)
-            imemory[10] = 32'h8C0B0000; // lw   $t3, 0($zero)
-            imemory[11] = 32'h012A5822; // sub  $t3, $t1, $t2
-            
-            imemory[12] = 32'h20080001; // addi $t0, $zero, 1
-            imemory[13] = 32'h20090002; // addi $t1, $zero, 2
-            imemory[14] = 32'h01095020; // add  $t2, $t0, $t1
-            imemory[15] = 32'hAC0A0000; // sw   $t2, 0($zero)
-            imemory[16] = 32'h8C0B0000; // lw   $t3, 0($zero)
-            
-            imemory[17] = 32'h012A5822; 
-            imemory[18] = 32'h20080001; // addi $t0, $zero, 1
-            imemory[19] = 32'h20090002; // addi $t1, $zero, 2
-            imemory[20] = 32'h01095020; // add  $t2, $t0, $t1
-            imemory[21] = 32'hAC0A0000; // sw   $t2, 0($zero)
-            imemory[22] = 32'h8C0B0000; // lw   $t3, 0($zero)
-            imemory[23] = 32'h012A5822;
-            
-            imemory[24] = 32'h012A5822; 
-            imemory[25] = 32'h20080001; // addi $t0, $zero, 1
-            imemory[26] = 32'h20090002; // addi $t1, $zero, 2
-            imemory[27] = 32'h01095020; // add  $t2, $t0, $t1
-            imemory[28] = 32'hAC0A0000; // sw   $t2, 0($zero)
-            imemory[29] = 32'h8C0B0000; // lw   $t3, 0($zero)
-            imemory[30] = 32'h012A5822; 
-            
-        end
-    end
-
-    
-    assign instruction = imemory[address];
-    
-endmodule
 
 
 module main(
-    input clk , rst,enable
+    clk ,rst,enable,
+    inst_write_address,
+    inst_write_data,
+    mem_write_input_address,
+    mem_write_input_data
+    
 );
-
+    // inst_write_address
+    input clk, rst,enable;
+    input [9:0]inst_write_address;
+    input [31:0]inst_write_data;
     // Program Counter
+    input [9:0]mem_write_input_address;
+    input [31:0]mem_write_input_data;
+    
+    wire mem_write_signal;
+    wire [9:0]mem_write_address;
+    wire [31:0]mem_write_data;
+   
+    
+    
+    
     wire [31:0] PC ; 
     wire [31:0] PC_plus_four;
-    assign PC_plus_four = PC + 4;
+    assign PC_plus_four = PC + 1;
     // Instruction
     wire [31:0] instruction;
 
@@ -855,13 +796,23 @@ module main(
     wire [1:0] reg_dst;
     // which branch
     wire [3:0] branches;
-    wire [31:0] testdata;
+    wire [31:0] testdata1;
+    wire [31:0] testdata2;
+    wire [31:0] testdata3;
+    wire [31:0] testdata4;
+    
+    assign mem_write_data = (enable) ? mem_write_input_data: read_data2;
+    assign mem_write_address = (enable) ? mem_write_input_address: ALU_result[9:0];
+    assign mem_write_signal = (enable) ? enable: mem_write;
+    
      // fetch instruction 
-    instructionMemory inst_instruction(
-        .rst(rst),
-        .enable(enable),
-        .address(PC[11:2]),
-        .instruction(instruction)
+    memory_wrapper inst_mem(
+        .a(inst_write_address),
+        .d(inst_write_data),
+        .dpra(PC[9:0]),
+        .clk(clk),
+        .we(enable),
+        .dpo(instruction)
     );
     
     Decoder decoder (
@@ -881,13 +832,13 @@ module main(
         .sign_extended_immediate(sign_extended_immediate)
     );
     // data memory
-    dataMemory instMem(
-        .memRead(mem_read),
-        .memWrite(mem_write),
-        .rst(rst),
-        .writedata(read_data2),
-        .address(ALU_result),
-        .readDATA(memory_data)
+    memory_wrapper data_mem(
+        .a(mem_write_address),
+        .d(mem_write_data),
+        .dpra(ALU_result[9:0]),
+        .clk(clk),
+        .we(mem_write_signal),
+        .dpo(memory_data)
     );
     // CU
     myControlUnit cu(
@@ -920,7 +871,10 @@ module main(
         .clock(clk),
         .dataOut1(read_data1),
         .dataOut2(read_data2),
-        .testdata(testdata)
+        .testdata1(testdata1),
+        .testdata2(testdata2),
+        .testdata3(testdata3),
+        .testdata4(testdata4)
     );    
     /// selection of data for r type and i type inst
     ALU_Input_Mux alu_input_mux (
@@ -976,63 +930,9 @@ module main(
     ) ;
     initial begin
         // Print selected signals when they change
-       $monitor("Time = %0t|clk=%b | PC = %d| Instr = %d|rs=%d|rt=%d|rd=%d|ALU=%d|testdata=%d|we=%d", $time,clk,PC, instruction,rs,rt,rd,ALU_result,testdata,write_data);
-//             opcode, funct, rs, rt, rd, shamt,
-//            immediate, sign_extended_immediate, jump_address, read_data1, read_data2, write_data,
-//            ALU_input1, ALU_input2, ALU_result, ALU_op, ALU_control,
-//            equal, less_than, greater_than, carry_out, overflow,
-//            HI, LO, branch_target, jump_target,
-//            jump, reg_write, mem_read, mem_write, mem_to_reg,
-//            alu_src, branch, reg_dst, branches
-    //    $monitor("Time = %0t|rst=%b |enable=%b | PC = %d | PC+4 = %d | Instr = %d | opcode = %b | funct = %b | rs = %d | rt = %d | rd = %d | shamt = %d | imm = %d | sign_ext = %d | jump_addr = %d | R1 = %h | R2 = %d | WData = %d | ALU1 = %d | ALU2 = %d | ALUres = %d | ALUop = %d | ALUctrl = %b | eq = %b | lt = %b | gt = %b | carry = %b | overflow = %b | HI = %d | LO = %d | BTarget = %d | JTarget = %d | jump = %b | reg_write = %b | mem_read = %b | mem_write = %b | mem2reg = %b | alusrc = %b | branch = %b | regdst = %b | branches = %b",
-    //        $time,rst,enable,PC, PC_plus_four, instruction, opcode, funct, rs, rt, rd, shamt,
-    //        immediate, sign_extended_immediate, jump_address, read_data1, read_data2, write_data,
-    //        ALU_input1, ALU_input2, ALU_result, ALU_op, ALU_control,
-    //        equal, less_than, greater_than, carry_out, overflow,
-    //        HI, LO, branch_target, jump_target,
-    //        jump, reg_write, mem_read, mem_write, mem_to_reg,
-    //        alu_src, branch, reg_dst, branches);
+        $monitor("Time = %0t|clk=%b | PC = %d| inst = %d |rs=%d|rt=%d|rd=%d |wd=%d|regdata=%d|memwrite=%b |t1=%d|t2=%d|t3=%d|t4=%d", $time,clk,PC, instruction,rs,rt,rd,write_data,ALU_result,reg_write,testdata1,testdata2,
+        testdata3,testdata4);
+//             );
     end  
 endmodule
-module tb_instructionMemory;
 
-    reg rst;
-    reg enable;
-    reg clk;
-    reg [9:0] address;
-    //wire [31:0] instruction;
-
-    // instructionMemory im (
-    //     .rst(rst),
-    //     .enable(enable),
-    //     .address(address),
-    //     .instruction(instruction)
-    // );
-    main inst(
-        .rst(rst),
-        .clk(clk),
-        .enable(enable)
-    );
-
-    initial begin
-    clk = 0;             // Start clock at 0
-    forever #5 clk = ~clk;  // Toggle clock every 5 time units (period = 10)
-    end
-
-    initial begin
-        $dumpfile("test.vcd"); $dumpvars;
-        rst = 1;
-        enable = 0;
-        address = 0;
-        #10;
-
-        rst = 0;
-        enable = 1;
-        # 10 enable=0;
-    end
-    initial begin
-
-        #1000 $finish;
-    end
-
-endmodule
