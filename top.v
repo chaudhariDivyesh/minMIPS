@@ -44,7 +44,7 @@ output reg [31:0] nextPC;
             end
             else begin
                 if(zero) begin   // if branch split
-                    nextPC<=PC_plus_four+signExtendedImmediate;
+                    nextPC<=$signed(PC_plus_four)+$signed(signExtendedImmediate);
                 end 
                 else begin
                     nextPC<=PC_plus_four;
@@ -116,22 +116,22 @@ module MY_ALU(
    always@(*)begin
     case(branch)
         Branch_equal: begin
-        zero = (ALU_input1 == ALU_input2); // beq
+        zero = ($signed(ALU_input1) == $signed(ALU_input2)); // beq
         end
         Branch_notEqual: begin
-            zero = (ALU_input1 != ALU_input2); // bne
+            zero = ($signed(ALU_input1) != $signed(ALU_input2)); // bne
         end
         Branch_bgt: begin
-            zero = (ALU_input1 > ALU_input2);  // bgt (signed)
+            zero = ($signed(ALU_input1) > $signed(ALU_input2));  // bgt (signed)
         end
         Branch_bgte: begin
-            zero = (ALU_input1 >= ALU_input2); // bge (signed)
+            zero = ($signed(ALU_input1) >= $signed(ALU_input2)); // bge (signed)
         end
         Branch_ble: begin
-            zero = (ALU_input1 < ALU_input2);  // blt (signed)
+            zero = ($signed(ALU_input1) < $signed(ALU_input2));  // blt (signed)
         end
         Branch_bleq: begin
-            zero = (ALU_input1 <= ALU_input2); // ble (signed)
+            zero = ($signed(ALU_input1) <= $signed(ALU_input2)); // ble (signed)
         end
         Branch_bleu: begin
             zero = ($unsigned(ALU_input1) <= $unsigned(ALU_input2)); // bleu (unsigned)
@@ -143,10 +143,10 @@ module MY_ALU(
             zero = 0;              
             case(ALU_control)
                 ADD: begin
-                    ALU_result=ALU_input1 + ALU_input2;
+                    ALU_result=$signed(ALU_input1) + $signed(ALU_input2);
                 end 
                 SUB: begin
-                    ALU_result=ALU_input1 - ALU_input2;
+                    ALU_result=$signed(ALU_input1) -$signed(ALU_input2);
                 end 
                 ADDU: begin
                     ALU_result=$unsigned(ALU_input1) + $unsigned(ALU_input2);
@@ -183,10 +183,10 @@ module MY_ALU(
                     ALU_result=ALU_input1 ^ ALU_input2;
                 end 
                 Slt: begin
-                    ALU_result=(ALU_input1<ALU_input2);
+                    ALU_result=($signed(ALU_input1)<$signed(ALU_input2));
                 end
                 Seq: begin
-                    ALU_result=(ALU_input1==ALU_input2);
+                    ALU_result=($signed(ALU_input1)==$signed(ALU_input2));
                 end
                 SLL: begin // Shift Left Logical
                     ALU_result = ALU_input2 << shamt;
@@ -349,8 +349,8 @@ WE, dataOut1, dataOut2, clock,testdata1,testdata2,testdata3,testdata4);
     assign dataOut2= RF[readAddress2];
     assign testdata1=RF[9];
     assign testdata2=RF[10];
-    assign testdata3=RF[11];
-    assign testdata4=RF[12];
+    assign testdata3=RF[writeAddress];
+    assign testdata3=RF[12];
     integer i;
     always @(negedge clock or posedge rst) begin
         if (rst) begin
@@ -358,7 +358,7 @@ WE, dataOut1, dataOut2, clock,testdata1,testdata2,testdata3,testdata4);
                 RF[i] <= 32'b0;
         end
         else if (WE && writeAddress != 0) begin
-            RF[writeAddress] <= writeData;
+            RF[writeAddress] = writeData;
         end
     end
 
@@ -416,28 +416,29 @@ module myControlUnit(opcode,regDst,regWrite,aluSrc,memRead,memWrite,memToReg,jum
         // localparam [3:0] SRL  = 4'd9;  // Shift right logical
         // localparam [3:0] SRA  = 4'd10;  // Shift right arithmetic
         // localparam [3:0] SLT  = 4'd11;  // Set on less than
-        localparam [5:0] opCode_R_Type=6'b000000;
-        localparam [5:0] opCode_addIU_Type=6'b001001;
-        localparam [5:0] opCode_ANDI_Type=6'b001100;
-        localparam [5:0] opCode_ORI_Type=6'b001101;
-        localparam [5:0] opCode_XORI_Type=6'b001110;
-        localparam [5:0] opCode_addI_Type=6'b001000;
-        localparam [5:0] opCode_load_Type=6'b100011;
-        localparam [5:0] opCode_SW_Type=6'b101011;
-        localparam [5:0] opCode_LUI_Type=6'b001111;
-        localparam [5:0] opCode_J_Type=6'b000010;
-        localparam [5:0] opCode_JAL_Type=6'b000011;
-        localparam [5:0] opCode_SLTI_Type=6'b001010;
-        localparam [5:0] opCode_beq_Type=6'b000100;
-        localparam [5:0] opCode_bne_Type=6'b000101;
+        localparam [5:0] opCode_R_Type   = 6'd0;
+        localparam [5:0] opCode_addIU_Type = 6'd9;
+        localparam [5:0] opCode_ANDI_Type  = 6'd12;
+        localparam [5:0] opCode_ORI_Type   = 6'd13;
+        localparam [5:0] opCode_XORI_Type  = 6'd14;
+        localparam [5:0] opCode_addI_Type  = 6'd8;
+        localparam [5:0] opCode_load_Type  = 6'd35;
+        localparam [5:0] opCode_SW_Type    = 6'd43;
+        localparam [5:0] opCode_LUI_Type   = 6'd15;
+        localparam [5:0] opCode_J_Type     = 6'd2;
+        localparam [5:0] opCode_JAL_Type   = 6'd3;
+        localparam [5:0] opCode_SLTI_Type  = 6'd10;
+        localparam [5:0] opCode_beq_Type   = 6'd4;
+        localparam [5:0] opCode_bne_Type   = 6'd5;
+        
 
         // added instuction type
-        localparam [5:0] opCode_bgt_Type=6'b100000;  //32 bgte
-        localparam [5:0] opCode_bgte_Type=6'b100001;  //33 bgte
-        localparam [5:0] opCode_ble_Type=6'b100010;  //34 bgte
-        localparam [5:0] opCode_bleq_Type=6'b100011;  //35 bgte
-        localparam [5:0] opCode_bleu_Type=6'b100100;  //36 bleu
-        localparam [5:0] opCode_bgtu_Type=6'b100101;  //37 bgtu
+        localparam [5:0] opCode_bgt_Type=6'd32;  //32 bgte
+        localparam [5:0] opCode_bgte_Type=6'd33;  //33 bgte
+        localparam [5:0] opCode_ble_Type=6'd34;  //34 bgte
+        localparam [5:0] opCode_bleq_Type=6'd36;  //35 bgte
+        localparam [5:0] opCode_bleu_Type=6'd37;  //36 bleu
+        localparam [5:0] opCode_bgtu_Type=6'd38;  //37 bgtu
         //localparam [5:0] opCode_bgtu_Type=6'b100000; //38 bgte
         localparam [5:0] opCode_SEQ_Type=6'b100110;  //38seq
 
@@ -918,6 +919,7 @@ module main(
         .writedata(write_data)
     );
     update_pc inst_update_pc(
+        .zero(zero),
         .jump_target(instruction[25:0]),
         .PC_plus_four(PC_plus_four),
         .signExtendedImmediate(sign_extended_immediate),
@@ -930,9 +932,13 @@ module main(
     ) ;
     initial begin
         // Print selected signals when they change
-        $monitor("Time = %0t|clk=%b | PC = %d| inst = %d |rs=%d|rt=%d|rd=%d |wd=%d|regdata=%d|memwrite=%b |t1=%d|t2=%d|t3=%d|t4=%d", $time,clk,PC, instruction,rs,rt,rd,write_data,ALU_result,reg_write,testdata1,testdata2,
-        testdata3,testdata4);
+        $monitor("Time = %0t|clk=%b | PC = %d|inst=%d |nextpc = %d|d1=%d|d2=%d|al1=%d|AL2=%d |rs=%d|rt=%d|rd=%d |wd=%d|regdata=%b|memwrite=%b|jump=%b|jumpSRC=%b", $time,clk,PC,+ instruction,$signed(PC_plus_four)+ $signed(sign_extended_immediate),testdata1,testdata2,$signed(read_data1),ALU_input2,rs,rt,rd,write_data,sign_extended_immediate,zero,jump,jump_src);
 //             );
     end  
 endmodule
 
+
+
+// instruction format for bgte {6'd33,rs,rt,offset}
+// instruction format for ble {6'd34,rs,rt,offset} ble
+// instruction for  bleq  {6'd36,rs,rt,offset}
